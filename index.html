@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c0d0f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>DOP Shot Board</title>
+<style>
+:root{--bg:#121316;--card:#1c1e23;--line:#2c2f36;--tx:#e8e9ec;--mut:#8b8f99;--acc:#ffb020;--red:#ff5a4d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#0c0d0f;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:15px;margin:0 8px 0 0;color:var(--acc);letter-spacing:.08em;text-transform:uppercase}
+input,select,textarea{background:#101114;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit;width:100%}
+textarea{resize:vertical;min-height:60px}
+header input,header select,#song input,#song select{width:auto}
+button{background:#262930;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer;min-height:36px}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);color:#111;border-color:var(--acc);font-weight:600}
+label{display:block;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.sp{flex:1}
+#song{margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+#song .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#song .row label{display:inline;margin:0}
+#song input[type=number]{width:76px}
+#songInfo{color:var(--acc);font-weight:600}
+#tl{width:100%;height:96px;display:block;margin-top:10px;border-radius:6px;background:#0a0a0b;cursor:pointer;touch-action:manipulation}
+main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.top{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.num{background:var(--acc);color:#111;font-weight:700;border-radius:5px;padding:1px 8px}
+.top input{border:0;background:transparent;font-weight:600;padding:4px}
+.time{color:var(--mut);font-size:12px;white-space:nowrap}
+.top .play{padding:2px 9px;min-height:28px}
+.img{position:relative;background:#0a0a0b;cursor:pointer;touch-action:none;user-select:none}
+.img.empty{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center;padding:20px}
+.img img{display:block;width:100%;pointer-events:none}
+.frame{position:absolute;border:2px solid var(--acc);box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move;touch-action:none;
+ background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,176,32,.4) 0,rgba(255,176,32,.4) calc(33.33% + .5px),transparent 0,transparent calc(66.66% - .5px),rgba(255,176,32,.4) 0,rgba(255,176,32,.4) calc(66.66% + .5px),transparent 0),
+ linear-gradient(transparent calc(33.33% - .5px),rgba(255,176,32,.4) 0,rgba(255,176,32,.4) calc(33.33% + .5px),transparent 0,transparent calc(66.66% - .5px),rgba(255,176,32,.4) 0,rgba(255,176,32,.4) calc(66.66% + .5px),transparent 0)}
+.frame::after{content:attr(data-l);position:absolute;left:4px;top:2px;font-size:12px;font-weight:700;color:var(--acc);text-shadow:0 0 3px #000}
+.warn{position:absolute;left:8px;bottom:8px;right:8px;background:var(--red);color:#fff;padding:3px 8px;border-radius:5px;font-size:12px}
+.body{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.full{grid-column:1/-1}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chips button{padding:3px 9px;font-size:12px;min-height:30px}
+.chips button.on{background:var(--acc);color:#111;border-color:var(--acc)}
+.read{grid-column:1/-1;background:#101114;border:1px dashed var(--line);border-radius:6px;padding:6px 8px;color:var(--acc);font-weight:600}
+.acts{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
+.acts button{padding:4px 9px;font-size:12px;min-height:32px}
+.hint{color:var(--mut);font-size:12px;padding:8px 16px 0}
+@media print{
+ header,.acts,.chips,.hint,#song .row,.play{display:none!important}
+ body{background:#fff;color:#000}
+ #song{border:0;margin:0 0 10px;padding:0;background:#fff}
+ main{grid-template-columns:1fr 1fr;gap:10px;padding:0}
+ .card{break-inside:avoid;background:#fff;border-color:#999}
+ input,select,textarea{background:#fff;color:#000;border:0;border-bottom:1px solid #ccc;border-radius:0}
+ .read{background:#fff;color:#000}.num{background:#000;color:#fff}
+ .frame{box-shadow:none;border-color:#f00}
+}
+</style>
+</head>
+<body>
+<header>
+ <h1>DOP Shot Board</h1>
+ <input id="title" placeholder="Project title" size="24">
+ <select id="sensor" title="Camera sensor size">
+  <option value="36">Full frame (36mm)</option>
+  <option value="24.9">Super 35 (24.9mm)</option>
+  <option value="23.5">APS-C (23.5mm)</option>
+  <option value="17.3">Micro 4/3 (17.3mm)</option>
+ </select>
+ <select id="aspect" title="Frame ratio">
+  <option value="1.778">16:9</option>
+  <option value="2.39">2.39:1</option>
+  <option value="1.85">1.85:1</option>
+  <option value="1.333">4:3</option>
+  <option value="0.5625">9:16 vertical</option>
+ </select>
+ <span class="sp"></span>
+ <button class="pri" id="add">+ Add shot</button>
+ <button id="print">Print / PDF</button>
+ <button id="exp">Save file</button>
+ <button id="imp">Open file</button>
+ <input type="file" id="impf" accept=".json,application/json" hidden>
+</header>
+
+<section id="song">
+ <div class="row">
+  <button class="pri" id="loadSong">🎵 Load song</button>
+  <input type="file" id="songf" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg" hidden>
+  <span id="songInfo">No song loaded</span>
+  <span class="sp"></span>
+  <label>BPM</label><input id="bpm" type="number" min="50" max="220" step="0.5" disabled>
+  <select id="pace" title="How fast the cutting is">
+   <option value="slow">Slow cuts</option><option value="med" selected>Medium cuts</option><option value="fast">Fast cuts</option>
+  </select>
+  <label>Max shots</label><input id="max" type="number" min="4" max="120" value="30">
+  <button class="pri" id="build">Build storyboard</button>
+ </div>
+ <canvas id="tl"></canvas>
+</section>
+<div class="hint">Load a song → check the BPM → Build storyboard. You get a shot list with size, lens, angle, movement and composition for every section. Then add your location photos and adjust. Tap the timeline to jump to a shot. Everything saves automatically on this device — use “Save file” as a backup.</div>
+<main id="grid"></main>
+<input type="file" id="picker" accept="image/*" hidden>
+
+<script>
+const LENSES=[14,16,18,21,24,28,35,40,50,65,85,100,135,200];
+const SNAP=[8,10,12,14,16,18,20,21,24,25,28,32,35,40,45,50,58,65,75,85,100,135,200];
+const SIZES=["","ECU","CU","MCU","MS","MWS","WS","EWS","OTS","POV","Insert"];
+const MOVES=["Static / locked","Slow push-in","Slow pull-out","Dolly in","Dolly out","Track / slide","Handheld","Gimbal follow","Orbit","Pan","Tilt","Whip pan","Crane / jib","Drone","Zoom push"];
+const HEIGHTS=["","Ground","Low","Waist","Eye level","High","Overhead"];
+const ANGLES=["","Eye level","Low angle","High angle","Overhead","Worm's-eye","Dutch","POV"];
+const COMPS=["","Rule of thirds","Centered / symmetry","Leading lines","Negative space","Frame within frame","Deep foreground","Over-shoulder layering","Silhouette / backlight","Tight on eyes/hands"];
+const TIP={
+ "Rule of thirds":"Put the subject's eyes or the key action on a third line; leave look-room on the side they face.",
+ "Centered / symmetry":"Subject dead centre, symmetrical background. Strong, confident, a bit formal.",
+ "Leading lines":"Use roads, rails, walls or light beams to pull the eye to the subject.",
+ "Negative space":"Subject small in a big empty frame. Isolation, scale, room to breathe.",
+ "Frame within frame":"Shoot through a door, window or gap so the subject sits inside a second frame.",
+ "Deep foreground":"Put something in the foreground (out of focus is fine) for depth and layers.",
+ "Over-shoulder layering":"Foreground shoulder/head, subject in the middle, background behind: three layers.",
+ "Silhouette / backlight":"Expose for the bright background so the subject goes dark; rim light for outline.",
+ "Tight on eyes/hands":"Fill the frame with eyes, mouth, hands or instrument detail. Keep focus razor sharp."};
+const $=s=>document.querySelector(s);
+let P={title:"",sensor:36,aspect:1.778,song:null,shots:[]};
+let pickFor=null,FEAT=null,ONSET=null,AUD=null,stopAt=0;
+
+// ---------- storage ----------
+const DB=()=>new Promise((res,rej)=>{const r=indexedDB.open("dopboard",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function dbGet(){try{const d=await DB();return await new Promise(r=>{const q=d.transaction("s").objectStore("s").get("p");q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}catch(e){return null}}
+let tm;function save(){clearTimeout(tm);tm=setTimeout(async()=>{try{const d=await DB();d.transaction("s","readwrite").objectStore("s").put(P,"p")}catch(e){}},300)}
+
+// ---------- helpers ----------
+const newShot=()=>({id:Date.now()+Math.random(),img:"",name:"",loc:"",size:"",lens:35,ap:"",move:"Static / locked",height:"",angle:"",comp:"",fps:"",refmm:26,ox:.5,oy:.5,notes:"",time:"",t0:null,t1:null,auto:false});
+const eqFF=l=>l*36/P.sensor;
+const hfov=l=>2*Math.atan(P.sensor/(2*l))*180/Math.PI;
+const kind=e=>e<18?"Ultra wide":e<30?"Wide":e<45?"Standard-wide":e<70?"Normal":e<110?"Portrait / short tele":"Telephoto";
+const read=s=>{const l=+s.lens;return l?`${l}mm · ${Math.round(eqFF(l))}mm full-frame equiv. · ${hfov(l).toFixed(0)}° wide · ${kind(eqFF(l))}`:"Pick a lens"};
+const esc=t=>String(t??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const mmss=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")};
+function shrink(file){return new Promise(res=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{const m=1600,k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",.82))};i.src=u})}
+
+// =====================================================
+//  SONG ANALYSIS (all on the device, no internet)
+// =====================================================
+const HOP=1024;
+function features(ch,sr){
+  const n=Math.floor(ch.length/HOP),rms=new Float32Array(n),zc=new Float32Array(n),bass=new Float32Array(n);
+  let lp=0,prev=0;
+  for(let i=0;i<n;i++){let s=0,z=0,b=0;const o=i*HOP;
+    for(let j=0;j<HOP;j++){const x=ch[o+j];s+=x*x;if((x>=0)!==(prev>=0))z++;prev=x;lp+=0.04*(x-lp);b+=lp*lp}
+    rms[i]=Math.sqrt(s/HOP);zc[i]=z/HOP;bass[i]=Math.sqrt(b/HOP)}
+  return{rms,zc,bass,fps:sr/HOP,dur:ch.length/sr};
+}
+function onsetEnv(F){const n=F.rms.length,o=new Float32Array(n);for(let i=1;i<n;i++){const d=(F.rms[i]-F.rms[i-1])+(F.bass[i]-F.bass[i-1]);o[i]=d>0?d:0}return o}
+function phaseFor(o,fps,bpm){const p=fps*60/bpm;let best=0,bs=-1;for(let ph=0;ph<p;ph+=0.5){let s=0,c=0;for(let t=ph;t<o.length-1;t+=p){s+=o[Math.round(t)];c++}s/=Math.max(1,c);if(s>bs){bs=s;best=ph}}return{ph:best,score:bs}}
+function findBpm(o,fps){let best={score:-1,bpm:120,ph:0};
+  for(let b=70;b<=180;b+=0.5){const r=phaseFor(o,fps,b),prior=Math.exp(-Math.pow(Math.log2(b/115),2)/(2*.35*.35)),sc=r.score*prior;if(sc>best.score)best={score:sc,bpm:b,ph:r.ph}}
+  return{bpm:best.bpm,first:best.ph/fps}}
+function barData(F,bpm,first){
+  const beat=60/bpm,bar=beat*4,nb=Math.max(1,Math.floor((F.dur-first)/bar)),E=[],Z=[],B=[];
+  for(let b=0;b<nb;b++){const a=Math.floor((first+b*bar)*F.fps),z=Math.min(F.rms.length,Math.floor((first+(b+1)*bar)*F.fps)),c=Math.max(1,z-a);let r=0,zz=0,bb=0;
+    for(let i=a;i<z;i++){r+=F.rms[i];zz+=F.zc[i];bb+=F.bass[i]}E.push(r/c);Z.push(zz/c);B.push(bb/c)}
+  const norm=a=>{const s=[...a].sort((x,y)=>x-y),p=s[Math.floor(s.length*.95)]||1;return a.map(v=>Math.min(1,v/(p||1)))};
+  const e=norm(E),z=norm(Z),b2=norm(B);
+  return{bar,beat,first,nb,en:e.map((v,i)=>.6*v+.4*b2[i]),tex:z};
+}
+function findSections(D,dur){
+  const{en,tex,nb}=D,target=Math.max(3,Math.min(10,Math.round(dur/28)));
+  if(nb<8)return[{b0:0,b1:nb}];
+  const W=4,m=(a,x,y)=>{let s=0;for(let i=x;i<y;i++)s+=a[i];return s/Math.max(1,y-x)},nov=[];
+  for(let b=1;b<nb;b++){const a0=Math.max(0,b-W),b1=Math.min(nb,b+W);nov.push({b,v:Math.abs(m(en,a0,b)-m(en,b,b1))*2+Math.abs(m(tex,a0,b)-m(tex,b,b1))*.5})}
+  nov.sort((x,y)=>y.v-x.v);const cuts=[];
+  for(const c of nov){if(cuts.length>=target-1)break;if(c.b<4||nb-c.b<4)continue;if(cuts.every(k=>Math.abs(k-c.b)>=4))cuts.push(c.b)}
+  cuts.sort((a,b)=>a-b);const ed=[0,...cuts,nb];
+  return ed.slice(0,-1).map((s,i)=>({b0:s,b1:ed[i+1]}));
+}
+function labelSections(secs,D,dur){
+  const E=secs.map(s=>{let m=0;for(let i=s.b0;i<s.b1;i++)m+=D.en[i];s.e=m/(s.b1-s.b0);
+    const q=Math.max(1,Math.floor((s.b1-s.b0)/4));let a=0,z=0;for(let i=0;i<q;i++){a+=D.en[s.b0+i];z+=D.en[s.b1-1-i]}s.slope=(z-a)/q;return s.e});
+  const mn=Math.min(...E),mx=Math.max(...E),R=(mx-mn)||1,cnt={};
+  secs.forEach((s,i)=>{const r=(s.e-mn)/R;s.level=r<.34?"low":r<.67?"mid":"high";
+    s.base=(i==0&&s.level!=="high")?"Intro":(i==secs.length-1&&secs.length>2&&s.level!=="high")?"Outro":s.level==="high"?"Chorus / Drop":s.slope>.15?"Build":s.level==="low"?"Breakdown":"Verse";
+    cnt[s.base]=(cnt[s.base]||0)+1});
+  const seen={};
+  secs.forEach((s,i)=>{seen[s.base]=(seen[s.base]||0)+1;s.label=cnt[s.base]>1?`${s.base} ${seen[s.base]}`:s.base;
+    s.t0=s.b0===0?0:D.first+s.b0*D.bar;s.t1=i===secs.length-1?dur:D.first+s.b1*D.bar;s.e=+s.e.toFixed(2);delete s.slope;delete s.base});
+  return secs;
+}
+function makeSong(name,F,bpm,first){
+  const D=barData(F,bpm,first),secs=labelSections(findSections(D,F.dur),D,F.dur);
+  return{name,dur:F.dur,bpm,first,en:D.en.map(v=>+v.toFixed(2)),sections:secs};
+}
+
+// =====================================================
+//  SHOT PLANNER (rules of thumb a DOP would use)
+// =====================================================
+// [size, lens (full-frame equiv. mm), angle, movement, composition, height]
+const TPL={
+ low:[["EWS",18,"Eye level","Slow push-in","Negative space","Eye level"],
+      ["WS",24,"Eye level","Static / locked","Centered / symmetry","Eye level"],
+      ["MS",35,"Eye level","Slow pull-out","Rule of thirds","Waist"],
+      ["CU",85,"Eye level","Static / locked","Tight on eyes/hands","Eye level"],
+      ["WS",28,"High angle","Drone","Leading lines","High"]],
+ mid:[["MS",35,"Eye level","Gimbal follow","Rule of thirds","Eye level"],
+      ["MCU",50,"Eye level","Track / slide","Over-shoulder layering","Eye level"],
+      ["WS",24,"Low angle","Dolly in","Leading lines","Low"],
+      ["OTS",50,"Eye level","Static / locked","Frame within frame","Eye level"],
+      ["CU",85,"Eye level","Slow push-in","Rule of thirds","Eye level"],
+      ["MS",28,"Eye level","Orbit","Deep foreground","Waist"]],
+ high:[["CU",85,"Low angle","Handheld","Rule of thirds","Low"],
+       ["WS",21,"Low angle","Dolly in","Centered / symmetry","Ground"],
+       ["ECU",135,"Eye level","Static / locked","Tight on eyes/hands","Eye level"],
+       ["MS",35,"Eye level","Orbit","Silhouette / backlight","Waist"],
+       ["MCU",50,"Dutch","Handheld","Rule of thirds","Eye level"],
+       ["WS",16,"Eye level","Whip pan","Leading lines","Waist"],
+       ["CU",100,"High angle","Gimbal follow","Deep foreground","High"]]};
+const BUILD=[["WS",24,"Eye level","Dolly in","Leading lines","Eye level"],["MS",35,"Eye level","Gimbal follow","Rule of thirds","Eye level"],["MCU",50,"Eye level","Slow push-in","Rule of thirds","Eye level"],["CU",85,"Low angle","Handheld","Tight on eyes/hands","Low"],["ECU",135,"Eye level","Zoom push","Tight on eyes/hands","Eye level"]];
+const toSensor=eq=>{const t=eq*P.sensor/36;return SNAP.reduce((a,b)=>Math.abs(b-t)<Math.abs(a-t)?b:a)};
+
+function planShots(song,opts){
+  const beat=60/song.bpm,mult={slow:2,med:1,fast:.5}[opts.pace]||1;let m=1,items=[];
+  for(let tries=0;tries<40;tries++){items=[];
+    song.sections.forEach((sec,si)=>{const dur=sec.t1-sec.t0,cb=Math.max(2,{low:4,mid:2,high:1}[sec.level]*4*mult*m),k=Math.max(1,Math.round(dur/(cb*beat)));
+      const snap=t=>song.first+Math.round((t-song.first)/beat)*beat;
+      for(let i=0;i<k;i++){const a=i===0?sec.t0:snap(sec.t0+dur*i/k),b=i===k-1?sec.t1:snap(sec.t0+dur*(i+1)/k);items.push({sec,si,i,k,t0:a,t1:b})}});
+    if(items.length<=opts.max)break;m*=1.25}
+  let lastSize="",off=0,prevSi=-1;
+  return items.map((it,n)=>{
+    if(it.si!==prevSi){off+=2;prevSi=it.si}
+    const sec=it.sec;let t;
+    if(n===0)t=["WS",24,"Eye level","Slow push-in","Negative space","Eye level"];
+    else if(n===items.length-1)t=["WS",24,"Eye level","Slow pull-out","Negative space","Eye level"];
+    else if(sec.label.startsWith("Build"))t=BUILD[Math.min(BUILD.length-1,Math.floor(it.i/it.k*BUILD.length))];
+    else if(sec.level==="high"&&it.i===0)t=TPL.high[1];
+    else{const L=TPL[sec.level];let idx=(off+it.i)%L.length;if(L[idx][0]===lastSize)idx=(idx+1)%L.length;t=L[idx]}
+    lastSize=t[0];
+    const bar=b=>Math.floor((b-song.first)/(beat*4))+1;
+    const s=newShot();
+    Object.assign(s,{name:sec.label+(it.k>1?` – ${it.i+1}`:""),size:t[0],lens:toSensor(t[1]),angle:t[2],move:t[3],comp:t[4],height:t[5],t0:it.t0,t1:it.t1,
+      time:`${mmss(it.t0)}–${mmss(it.t1)}`,auto:true,
+      notes:`${sec.label} · bar ${Math.max(1,bar(it.t0+.01))} · ${sec.level} energy\n${TIP[t[4]]}`});
+    return s;
+  });
+}
+
+// ---------- timeline ----------
+const LEVELCOL={low:"#4a86d9",mid:"#d9a441",high:"#e5564a"};
+function drawTimeline(){
+  const cv=$("#tl"),song=P.song;
+  const w=cv.clientWidth||600,h=96,dpr=window.devicePixelRatio||1;cv.width=w*dpr;cv.height=h*dpr;
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  if(!song){g.fillStyle="#8b8f99";g.font="13px sans-serif";g.fillText("Song timeline will appear here",12,52);return}
+  const X=t=>t/song.dur*w;
+  song.sections.forEach(sec=>{g.fillStyle=LEVELCOL[sec.level];
+    const b0=sec.b0,b1=sec.b1;
+    for(let b=b0;b<b1;b++){const x0=X(sec.t0+(sec.t1-sec.t0)*(b-b0)/(b1-b0)),x1=X(sec.t0+(sec.t1-sec.t0)*(b+1-b0)/(b1-b0)),v=song.en[b]||0,bh=8+v*(h-34);
+      g.globalAlpha=.85;g.fillRect(x0,h-12-bh,Math.max(1,x1-x0-1),bh)}
+    g.globalAlpha=1;g.fillStyle="#fff";g.fillRect(X(sec.t0),0,1,h);g.font="11px sans-serif";g.fillText(sec.label,X(sec.t0)+4,12)});
+  g.fillStyle="#ffb020";P.shots.forEach(s=>{if(s.t0!=null)g.fillRect(X(s.t0),h-9,2,9)});
+  if(AUD&&!AUD.paused){g.fillStyle="#fff";g.fillRect(X(AUD.currentTime),0,2,h)}
+}
+$("#tl").onclick=e=>{
+  if(!P.song)return;const r=e.target.getBoundingClientRect(),t=(e.clientX-r.left)/r.width*P.song.dur;
+  const i=P.shots.findIndex(s=>s.t0!=null&&t>=s.t0&&t<s.t1);
+  if(i>=0){const c=$("#grid").children[i];c&&c.scrollIntoView({behavior:"smooth",block:"center"});}
+  if(AUD){AUD.currentTime=t;stopAt=0;AUD.play()}
+};
+function playSeg(s){if(!AUD)return;AUD.currentTime=s.t0;stopAt=s.t1;AUD.play()}
+
+// ---------- loading a song ----------
+async function loadSong(file){
+  const info=$("#songInfo");info.textContent="Analysing… (a few seconds)";
+  try{
+    const ab=await new Promise(async(res,rej)=>{const Ctx=window.AudioContext||window.webkitAudioContext,c=new Ctx();try{res(await c.decodeAudioData(await file.arrayBuffer()))}catch(e){rej(e)}finally{c.close&&c.close()}});
+    const n=ab.length,ch=new Float32Array(n),c0=ab.getChannelData(0),c1=ab.numberOfChannels>1?ab.getChannelData(1):c0;
+    for(let i=0;i<n;i++)ch[i]=(c0[i]+c1[i])/2;
+    await new Promise(r=>setTimeout(r,30));
+    FEAT=features(ch,ab.sampleRate);ONSET=onsetEnv(FEAT);
+    const{bpm,first}=findBpm(ONSET,FEAT.fps);
+    P.song=makeSong(file.name.replace(/\.[^.]+$/,""),FEAT,bpm,first);
+    if(AUD){AUD.pause();URL.revokeObjectURL(AUD.src)}
+    AUD=new Audio(URL.createObjectURL(file));AUD.ontimeupdate=()=>{if(stopAt&&AUD.currentTime>=stopAt){AUD.pause();stopAt=0}drawTimeline()};AUD.onpause=drawTimeline;
+    showSong();draw();save();
+  }catch(e){info.textContent="Couldn't read that audio file. Try an MP3, WAV or M4A.";console.error(e)}
+}
+function showSong(){
+  const s=P.song;$("#songInfo").textContent=s?`${s.name} · ${mmss(s.dur)} · ${s.sections.length} sections`:"No song loaded";
+  const b=$("#bpm");b.value=s?s.bpm:"";b.disabled=!(s&&FEAT);b.title=FEAT?"Wrong tempo? Type the real BPM":"Load the song again to change the BPM";
+  drawTimeline();
+}
+$("#bpm").onchange=e=>{
+  const bpm=+e.target.value;if(!FEAT||!bpm)return;
+  const ph=phaseFor(ONSET,FEAT.fps,bpm);P.song=makeSong(P.song.name,FEAT,bpm,ph.ph/FEAT.fps);showSong();save();
+};
+$("#loadSong").onclick=()=>{$("#songf").value="";$("#songf").click()};
+$("#songf").onchange=e=>{const f=e.target.files[0];if(f)loadSong(f)};
+$("#build").onclick=()=>{
+  if(!P.song){alert("Load a song first.");return}
+  if(P.shots.some(s=>s.img||!s.auto)&&!confirm("This replaces your current shots (including photos). Continue?"))return;
+  P.shots=planShots(P.song,{pace:$("#pace").value,max:Math.max(4,+$("#max").value||30)});
+  draw();save();window.scrollTo({top:$("#grid").offsetTop-60,behavior:"smooth"});
+};
+
+// ---------- render cards ----------
+function frameBox(s,imgEl){
+  const w=imgEl.clientWidth,h=imgEl.clientHeight;if(!w)return null;
+  const frac=(+s.refmm||26)/eqFF(+s.lens||35),L=frac*w,a=P.aspect;let fw,fh;
+  if(a>=1){fw=L;fh=L/a}else{fh=L;fw=L*a}
+  const warn=fw>w+1||fh>h+1;if(warn){const k=Math.min(w/fw,h/fh);fw*=k;fh*=k}
+  return{fw,fh,x:Math.min(Math.max(s.ox*w-fw/2,0),w-fw),y:Math.min(Math.max(s.oy*h-fh/2,0),h-fh),warn};
+}
+function paintFrame(card,s){
+  const box=card.querySelector(".img"),im=box.querySelector("img");if(!im)return;
+  box.querySelectorAll(".frame,.warn").forEach(n=>n.remove());
+  const f=frameBox(s,im);if(!f)return;
+  const d=document.createElement("div");d.className="frame";d.dataset.l=s.lens+"mm";
+  Object.assign(d.style,{width:f.fw+"px",height:f.fh+"px",left:f.x+"px",top:f.y+"px"});box.appendChild(d);
+  if(f.warn){const w=document.createElement("div");w.className="warn";w.textContent="Wider than the reference photo — use a wider photo or lower the photo mm";box.appendChild(w)}
+  d.onpointerdown=e=>{e.stopPropagation();e.preventDefault();d.setPointerCapture(e.pointerId);
+    const mv=ev=>{const r=im.getBoundingClientRect();s.ox=(ev.clientX-r.left)/r.width;s.oy=(ev.clientY-r.top)/r.height;paintFrame(card,s)};
+    const up=()=>{d.removeEventListener("pointermove",mv);d.removeEventListener("pointerup",up);save()};
+    d.addEventListener("pointermove",mv);d.addEventListener("pointerup",up)};
+}
+const opts=(a,v)=>a.map(o=>`<option ${o===v?"selected":""}>${o}</option>`).join("");
+function card(s,i){
+  const c=document.createElement("div");c.className="card";
+  c.innerHTML=`
+  <div class="top"><span class="num">${i+1}</span><input data-k="name" placeholder="Shot name" value="${esc(s.name)}">
+   ${s.time?`<span class="time">${esc(s.time)}</span>`:""}${AUD&&s.t0!=null?`<button class="play" title="Play this part of the song">▶</button>`:""}</div>
+  <div class="img ${s.img?"":"empty"}">${s.img?`<img src="${s.img}">`:"📷 Tap here to add the location photo"}</div>
+  <div class="body">
+   <div class="full"><label>Location</label><input data-k="loc" value="${esc(s.loc)}" placeholder="Where is this?"></div>
+   <div class="full"><label>Lens (mm on your camera)</label>
+     <input data-k="lens" type="number" inputmode="numeric" min="4" max="800" value="${s.lens}">
+     <div class="chips">${LENSES.map(l=>`<button data-l="${l}" class="${l==s.lens?"on":""}">${l}</button>`).join("")}</div></div>
+   <div class="read">${read(s)}</div>
+   <div><label>Shot size</label><select data-k="size">${opts(SIZES,s.size)}</select></div>
+   <div><label>Camera angle</label><select data-k="angle">${opts(ANGLES,s.angle)}</select></div>
+   <div><label>Movement</label><select data-k="move">${opts(MOVES,s.move)}</select></div>
+   <div><label>Camera height</label><select data-k="height">${opts(HEIGHTS,s.height)}</select></div>
+   <div class="full"><label>Composition</label><select data-k="comp">${opts(COMPS,s.comp)}</select></div>
+   <div><label>Photo taken at (mm, FF equiv.)</label><input data-k="refmm" type="number" inputmode="numeric" value="${s.refmm}" title="Phone main camera ≈ 24–26mm"></div>
+   <div><label>Aperture</label><input data-k="ap" value="${esc(s.ap)}" placeholder="T2.8"></div>
+   <div class="full"><label>fps / shutter</label><input data-k="fps" value="${esc(s.fps)}" placeholder="25 · 1/50"></div>
+   <div class="full"><label>Notes (lighting, blocking, gear)</label><textarea data-k="notes">${esc(s.notes)}</textarea></div>
+  </div>
+  <div class="acts"><button class="up">↑</button><button class="dn">↓</button><button class="dup">Duplicate</button><button class="pic">Change photo</button><span class="sp"></span><button class="rm">Delete</button></div>`;
+  const box=c.querySelector(".img");
+  box.onclick=()=>{if(!s.img)ask(s)};
+  box.ondragover=e=>e.preventDefault();
+  box.ondrop=async e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f&&f.type.startsWith("image/")){s.img=await shrink(f);s.auto=false;draw();save()}};
+  const im=box.querySelector("img");if(im){im.onload=()=>paintFrame(c,s);if(im.complete)paintFrame(c,s)}
+  const upd=()=>{c.querySelector(".read").textContent=read(s);c.querySelectorAll(".chips button").forEach(b=>b.classList.toggle("on",+b.dataset.l==s.lens));paintFrame(c,s)};
+  c.querySelectorAll("[data-k]").forEach(el=>{const h=()=>{s[el.dataset.k]=el.type==="number"?+el.value:el.value;s.auto=false;
+      if(el.dataset.k==="comp"&&TIP[s.comp]&&s.notes.indexOf(TIP[s.comp])<0){s.notes=(s.notes?s.notes+"\n":"")+TIP[s.comp];c.querySelector('[data-k="notes"]').value=s.notes}
+      upd();drawTimeline();save()};el.oninput=h;if(el.tagName==="SELECT")el.onchange=h});
+  c.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{s.lens=+b.dataset.l;s.auto=false;c.querySelector('[data-k="lens"]').value=s.lens;upd();save()});
+  const pl=c.querySelector(".play");if(pl)pl.onclick=()=>playSeg(s);
+  c.querySelector(".pic").onclick=()=>ask(s);
+  c.querySelector(".rm").onclick=()=>{if(confirm("Delete this shot?")){P.shots.splice(i,1);draw();save()}};
+  c.querySelector(".dup").onclick=()=>{P.shots.splice(i+1,0,{...s,id:Date.now()+Math.random()});draw();save()};
+  c.querySelector(".up").onclick=()=>{if(i>0){[P.shots[i-1],P.shots[i]]=[P.shots[i],P.shots[i-1]];draw();save()}};
+  c.querySelector(".dn").onclick=()=>{if(i<P.shots.length-1){[P.shots[i+1],P.shots[i]]=[P.shots[i],P.shots[i+1]];draw();save()}};
+  return c;
+}
+function draw(){const g=$("#grid");g.innerHTML="";P.shots.forEach((s,i)=>g.appendChild(card(s,i)));
+  $("#title").value=P.title;$("#sensor").value=P.sensor;$("#aspect").value=P.aspect;document.title=P.title||"DOP Shot Board";drawTimeline()}
+function ask(s){pickFor=s;$("#picker").value="";$("#picker").click()}
+
+// ---------- wiring ----------
+$("#picker").onchange=async e=>{const f=e.target.files[0];if(f&&pickFor){pickFor.img=await shrink(f);pickFor.auto=false;draw();save()}};
+$("#add").onclick=()=>{const last=P.shots[P.shots.length-1],s=newShot();if(last){s.lens=last.lens;s.refmm=last.refmm;s.loc=last.loc}P.shots.push(s);draw();save();window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"})};
+$("#title").oninput=e=>{P.title=e.target.value;document.title=P.title||"DOP Shot Board";save()};
+$("#sensor").onchange=e=>{P.sensor=+e.target.value;draw();save()};
+$("#aspect").onchange=e=>{P.aspect=+e.target.value;draw();save()};
+$("#print").onclick=()=>print();
+$("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(P)],{type:"application/json"}));a.download=(P.title||"shot-board").replace(/[^\w\- ]+/g,"")+".json";a.click()};
+$("#imp").onclick=()=>$("#impf").click();
+$("#impf").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{P=Object.assign({song:null,shots:[]},JSON.parse(await f.text()));showSong();draw();save()}catch(x){alert("That file could not be read.")}};
+addEventListener("resize",()=>{document.querySelectorAll(".card").forEach((c,i)=>P.shots[i]&&paintFrame(c,P.shots[i]));drawTimeline()});
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+(async()=>{const p=await dbGet();if(p)P=Object.assign({song:null},p);if(!P.shots.length)P.shots.push(newShot());showSong();draw()})();
+</script>
+</body>
+</html>
